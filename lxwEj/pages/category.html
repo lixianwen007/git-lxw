@@ -1,0 +1,261 @@
+<style>
+	.category{
+		/*font-size: 16px;*/
+		font-weight: bold;
+		
+	}
+	.btns{
+		margin:20px 0;
+	}
+	.modal-dialog{
+		background-color: #ffffff;
+	}
+	.modal-boby{
+		margin:30px;
+	}
+	/*模态框分类姓名提示*/
+	#name_err{
+		position: relative;
+	}
+	.name_err{
+		display: none;
+	}
+	#name_err span{
+		position: absolute;
+		right: 0;
+	}
+	/*模态框数量提示*/
+	#num_err{
+		position: relative;
+	}
+	.num_err{
+		display: none;
+	}
+	#num_err span{
+		position: absolute;
+		right: 0;
+	}
+</style>
+
+<title>栏目管理</title>
+<div class="category">
+	主页  /  栏目管理
+	<!-- 按钮 -->
+	<div class="btns">
+		<button class="btn btn-outline-primary" id="btn_add">添加</button>
+		<button class="btn btn-outline-danger" id="btn_pldel">批量删除</button>
+	</div>
+	<!-- 表单 -->
+	<div class="forms">
+			<table class="table table-bordered text-center table-hover">
+				<thead>
+					<tr>
+						 <th scope="col" width="100px">编号</th>
+				      	<th scope="col">分类名字</th>
+				      	<th scope="col">数量</th>
+				      	<th scope="col">父id</th>
+				      	<th scope="col">操作</th>
+					</tr>
+				</thead>
+				<tbody>	
+
+				</tbody>
+			</table>
+	</div>
+	<!-- 模态框 -->
+	<!-- 模态框层罩 -->
+	<div class="modal fade" id="categoryModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	<!-- 弹框 -->
+  		<div class="modal-dialog  modal-lg" role="document">
+  		<!-- 弹框内容容器 -->
+    		<div class="modal-content">
+    		<!-- 弹框头部 -->
+      			<div class="modal-header">
+        			<h5 class="modal-title" id="exampleModalLabel">添加栏目信息</h5>
+        			<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          			<span aria-hidden="true">&times;</span>
+       				</button>
+      			</div>
+		      	<div class="modal-body">
+	        		<form>
+			 			<div class="form-group row">
+						    <div class="col-2 text-right">
+						    	<label for="input_name">分类名称</label>
+						    </div>
+						    <div class="col-10">
+						    	<input type="text" class="form-control" id="input_name" placeholder="请输入分类名称">
+						    </div>
+						</div>
+						<div class="form-group row">
+						  	<div class="col-2 text-right">
+						  		 <label for="input_num">数量</label>
+						  	</div>
+						    <div class="col-10">
+						    	<input type="text" class="form-control" id="input_num" placeholder="请输入数量">
+						    </div>
+						</div>
+						<div class="form-group row">
+						  	<div class="col-2 text-right">
+						  		<label for="input_parentId">父id</label>
+						  	</div>
+						  	<div class="col-10">
+						  		<select id="input_parentId" class="form-control">
+						  			<option value="" style="display: none;">请选择父栏目id</option>
+						  		</select>
+							</div>
+			  			</div>
+					</form>
+	     		</div>
+      			<div class="modal-footer">
+		        <button type="button" class="btn btn-secondary" id="btn_none">返回</button>
+		        <button type="button" class="btn btn-primary" id="addcategory">保存</button>
+      			</div>
+    		</div>
+  		</div>
+	</div>
+</div>
+
+<script>
+	baseURL = "http://134.175.100.63:6677";
+	// 该id是点击修改按钮时获取的id，设置为全局变量
+	var EditId;
+	//=====初始化数据，把后台数据渲染到浏览器端（查询）======
+		function initData(){
+			// 在每次追加数据之前，先清空table
+			$('.table tbody').empty();
+			// 获取地址
+			var url = "/category/findAll";
+			//用get方式获取后台数据
+			$.get(baseURL+url,function(result){
+				result.data.forEach(function(item){
+					var newTr = $(`<tr>
+							<td><input type="checkbox" value="`+item.id+`"/>`+item.id+`</td>
+							<td>`+item.name+`</td>
+							<td>`+item.num+`</td>
+							<td>`+item.parentId+`</td>
+							<td>
+								<a class="iconfont icon-xiugai" id="btn_upd"></a>
+								<a class="iconfont icon-iconfontshanchu1" id="btn_del"></a>
+							</td>
+						</tr>`);
+					//获取到的后台数据显示在tbody上
+					$(".table >tbody").append(newTr);
+				})
+			})
+		};
+		// 查询所有订单的id
+		function searchParentId(){
+			var url = "/category/findAll";
+			$.get(baseURL+url,function(result){
+				result.data.forEach(function(item){
+					var newOption = $(`
+						<option value="`+item.id+`">`+item.id+`</option>
+					`);
+					// 追加到模态框的下拉框中
+					$('#input_parentId').append(newOption);
+				});
+			});
+		}
+	$(function(){
+		//调用初始化数据函数
+		initData();	
+		searchParentId();
+		//================为添加按钮绑定显示模态框事件================
+		$("#btn_add").on("click",function(){
+			//让id为exampleModal的模态框显示
+			$("#categoryModal").modal("show");
+		});
+		//点击×关闭模态框
+		$("#btn_none").on("click",function(){
+			$("#categoryModal").modal("hide");
+		});
+		$('#categoryModal').on('hidden.bs.modal', function(e){
+		  $(this).find('form')[0].reset();
+		})
+		// ======================批量删除=====================
+		$("#btn_pldel").on("click",function(){
+			var url = "/category/batchDelete";
+			var ids = $(':checkbox:checked').map(function(index,item){
+				return $(item).val();
+			}).toArray();
+			var data = '';
+			for(index in ids){
+				if(index == 0){
+					data += 'ids='+ids[index]
+				}else{
+					data +='&ids='+ids[index]
+				}
+			}
+			$.post(baseURL+url,data,function(result){
+				console.log(result);
+				initData();
+			})
+		})
+		// =================保存数据以及修改数据===============
+		//1.获取分类姓名，数量
+		$("#addcategory").on("click",function(){
+			var url="/category/saveOrUpdate";
+			var name = $('#input_name').val();
+			var num = $('#input_num').val();
+			var parentId = $('#input_parentId').val();
+			//2.与后台交互
+				if(EditId){
+					var data = {
+							id:EditId,
+							name:name,
+							num:num,
+							parentId:parentId
+						}
+					// 将id置为空，否则点击修改后再次点击添加，还是修改
+					EditId = '';
+				}else{
+					//id不存在,即添加
+					var data = {
+							name:name,
+							num:num,
+							parentId:parentId
+						}
+				}
+				$.post(baseURL+url,data,function(result){
+					alert(result.message);
+					initData();
+				})
+			
+				//3.关闭模态框，刷新列表
+				$('#categoryModal').modal('hide');
+		});
+
+		// =================删除数据以及修改数据===============
+		$(".table >tbody").on("click","a",function(){
+			switch(this.id){
+				
+				case "btn_del" :{
+					// 获取到id的值
+					var id = $(this).parents("tr").find("td:nth-child(1)").text();
+					var data = "id=" +id;
+					//调用封装的ajax进行交互
+					var url = "/category/deleteById";
+					$.get(baseURL+url,data,function(result){
+						alert(result.message);
+						initData();
+					})
+					break;
+				}
+				case "btn_upd" :{
+					// 打开模态框
+					$('#categoryModal').modal('show');
+					// 获取到tr中的值并放入模态框
+					EditId  = $(this).parents("tr").find("td:nth-child(1)").text();
+					var name = $(this).parents("tr").find("td:nth-child(2)").text();
+					var num = $(this).parents("tr").find("td:nth-child(3)").text();
+					var parentId = $(this).parents('tr').find('td:nth-child(4)').text();
+					// 输出获取的值
+					$('#input_name').val(name);
+				 	$('#input_num').val(num);
+				 	$('#input_parentId').val(parentId);
+				 	break;
+				}
+			}
+		});
+	})
+</script>

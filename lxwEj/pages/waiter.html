@@ -1,0 +1,211 @@
+<style>
+	.customer{
+		/*font-size: 16px;*/
+		font-weight: bold;
+		
+	}
+	.btns{
+		margin: 20px 0;
+	}
+</style>
+
+<title>员工管理</title>
+
+<div class="customer">
+	主页  /  员工管理
+	<!-- 按钮 -->
+	<div class="btns">
+		<button class="btn btn-outline-primary" id="btn_add">添加</button>
+		<button class="btn btn-outline-danger" id="btn_pldel">批量删除</button>
+	</div>
+	<!-- 表单 -->
+	<div class="froms">
+		<table class="table table-bordered text-center">
+			<thead>
+				<tr>
+					<th scope="col" width="100px">编号</th>
+					<th scope="col">姓名</th>
+					<th scope="col">电话</th>
+					<th scope="col">密码</th>
+					<th scope="col">操作</th>
+				</tr>
+			</thead>
+			<tbody>
+				
+			</tbody>
+		</table>
+	</div>
+	<!-- 模态框 -->
+	<!-- 模态框层罩 -->
+	<div class="modal fade" id="waiterModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	<!-- 弹框 -->
+  		<div class="modal-dialog  modal-lg" role="document">
+  		<!-- 弹框内容容器 -->
+    		<div class="modal-content">
+    		<!-- 弹框头部 -->
+      			<div class="modal-header">
+        			<h5 class="modal-title" id="exampleModalLabel">添加员工信息</h5>
+        			<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          			<span aria-hidden="true">&times;</span>
+       				</button>
+      			</div>
+		      	<div class="modal-body">
+		        	<form>
+		        	<input type="hidden" name="id" id="input_id">
+		        	<!-- 姓名 -->
+			          	<div class="form-group" id="realname_err">
+			           	 <label for="input_realname" class="col-form-label">姓名</label>
+			           	 <input type="text" class="form-control" id="input_realname" placeholder="请输入姓名">
+			           	 <span class="realname_err" style="color: red;">请输入至少一位字母</span>
+			          	</div>
+			        <!-- 手机号 -->
+			          	<div class="form-group" id="telephone_err">
+			           	 <label for="input_telephone" class="col-form-label">手机号</label>
+			           	 <input type="text" class="form-control" id="input_telephone" placeholder="请输入手机号">
+			           	 <span class="telephone_err" style="color: red;">请输入9-11位数字</span>
+			          	</div>
+			        <!-- 密码 -->
+			          	<div class="form-group" id="password_err">
+			           	 <label for="input_password" class="col-form-label">密码</label>
+			           	 <input type="password" class="form-control" id="input_password" placeholder="请输入密码">
+			           	 <span class="password_err" style="color: red;">请输入至少六位数</span>
+			          	</div>
+		        	</form>
+      			</div>
+      			<div class="modal-footer">
+		        <button type="button" class="btn btn-secondary" id="btn_none">返回</button>
+		        <button type="button" class="btn btn-primary" id="addwaiter">保存</button>
+      			</div>
+    		</div>
+  		</div>
+	</div>
+</div>
+
+<script>
+	baseURL = "http://134.175.100.63:6677";
+	// 该id是点击修改按钮时获取的id，设置为全局变量
+	var EditId;
+	$(function(){
+	//=====初始化数据，把后台数据渲染到浏览器端（查询）======
+		function initData(){
+			// 在每次追加数据之前，先清空table
+			$('.table > tbody').empty();
+			var url = "/waiter/findAll";
+			$.get(baseURL+url,function(result){
+				result.data.forEach(function(item){
+					var newTr = $(`<tr>
+							<td><input type="checkbox" value="`+item.id+`"/>`+item.id+`</td>
+							<td>`+item.realname+`</td>
+							<td>`+item.telephone+`</td>
+							<td>`+item.password+`</td>
+							<td>
+								<a class="iconfont icon-xiugai" id="btn_upd"></a>
+								<a class="iconfont icon-iconfontshanchu1" id="btn_del"></a>
+							</td>
+						</tr>`);
+					//获取到的后台数据显示在tbody上
+					$('.table >tbody').append(newTr);
+				})
+			})
+		};
+		//调用初始化数据函数
+		initData();
+		//================为添加按钮绑定显示模态框事件===========
+		$('#btn_add').on("click",function(){
+			//让id为exampleModal的模态框显示
+			$("#waiterModal").modal("show");
+			//点击添加时，清空输入栏文字
+			$(".modal-body input[id=input_realname]").val('');
+			$(".modal-body input[id=input_telephone]").val('');
+			$(".modal-body input[id=input_password]").val('');
+		})
+		//点击×关闭模态框
+		$("#btn_none").on("click",function(){
+			$("#waiterModal").modal("hide");
+		});
+		// ======================批量删除=====================
+		$("#btn_pldel").on("click",function(){
+			var ids = $(':checkbox:checked').map(function(index,item){
+				return $(item).val();
+			}).toArray();
+			var data = '';
+			for(index in ids){
+				if(index == 0){
+					data += 'ids='+ids[index]
+				}else{
+					data +='&ids='+ids[index]
+				}
+			}
+			var url = "/waiter/batchDelete";
+			$.post(baseURL+url,data,function(result){
+				console.log(result);
+				initData();
+			})
+		})
+		// =================保存数据以及修改数据===============
+		$("#addwaiter").on("click",function(){
+			var realname  = $("#input_realname").val();
+			var telephone = $("#input_telephone").val();
+			var password = $("#input_password").val();
+			if(EditId){
+				//id存在，则修改
+				var data ={
+					id:EditId,
+					realname:realname,
+					telephone:telephone,
+					password:password
+				}
+				// 将id置为空，否则点击修改后再次点击添加，还是修改
+					EditId = '';
+			}else{
+				//id不存在,即添加
+				var data ={
+					realname:realname,
+					telephone:telephone,
+					password:password
+				}
+			}
+			var url = "/waiter/saveOrUpdate";
+			$.post(baseURL+url,data,function(result){
+				alert(result.message);
+				initData();
+			})
+			//3.关闭模态框，刷新列表
+				$('#waiterModal').modal('hide');
+		})
+		// =================删除数据以及修改数据===============
+		$(".table >tbody").on("click","a",function(){
+			switch(this.id){
+				case "btn_del" :{
+					// 获取到id的值
+					var id = $(this).parents("tr").find("td:nth-child(1)").text();
+					//与后台进行交互
+					var data = {
+						id:id
+					}
+					var url = "/waiter/deleteById";
+					$.get(baseURL+url,data,function(result){
+						alert(result.message);
+					//刷新数据
+						initData();
+					})
+					break;
+				}
+				case "btn_upd" :{
+					// 打开模态框
+				 	$('#waiterModal').modal('show');
+					//获取值
+					EditId = $(this).parents("tr").find("td:nth-child(1)").text();
+					var realname = $(this).parents("tr").find("td:nth-child(2)").text();
+					var telephone = $(this).parents('tr').find('td:nth-child(3)').text();
+				 	var password = $(this).parents('tr').find('td:nth-child(4)').text();
+				 	$('#input_realname').val(realname);
+				 	$('#input_telephone').val(telephone);
+				 	$('#input_password').val(password);
+				 	break;
+				}
+			}
+		})
+
+	})
+</script>

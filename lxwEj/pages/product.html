@@ -1,0 +1,247 @@
+<style>
+	.product{
+		/*font-size: 16px;*/
+		font-weight: bold;
+		
+	}
+	.btns{
+			margin: 20px 0;
+		}
+</style>
+
+<title>产品管理</title>
+
+<div class="product">
+	主页  /  产品管理
+	<!-- 按钮 -->
+	<div class="btns">
+		<button class="btn btn-outline-primary" id="cpbtn_add">添加</button>
+		<button class="btn btn-outline-danger" id="cpbtn_pldel">批量删除</button>
+	</div>
+	<!-- 表单 -->
+	<div class="froms">
+		<table class="table table-bordered text-center">
+			<thead>
+				<tr>
+					<th scope="col" width="100px">编号</th>
+					<th scope="col">产品名字</th>
+					<th scope="col">描述</th>
+					<th scope="col">价格</th>
+					<th scope="col">栏目id</th>
+					<th scope="col">操作</th>
+				</tr>
+			</thead>
+			<tbody>
+				
+			</tbody>
+		</table>
+	</div>
+	<!-- 模态框 -->
+	<!-- 模态框层罩 -->
+	<div class="modal fade" id="productModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	<!-- 弹框 -->
+  		<div class="modal-dialog  modal-lg" role="document">
+  		<!-- 弹框内容容器 -->
+    		<div class="modal-content">
+    		<!-- 弹框头部 -->
+      			<div class="modal-header">
+        			<h5 class="modal-title" id="exampleModalLabel">添加产品信息</h5>
+        			<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          			<span aria-hidden="true">&times;</span>
+       				</button>
+      			</div>
+		      	<div class="modal-body">
+	        <form>
+			  <div class="form-group row">
+			    <div class="col-2 text-right">
+			    	<label for="input_name">产品名称</label>
+			    </div>
+			    <div class="col-10">
+			    	<input type="text" class="form-control" id="input_name" placeholder="请输入名称">
+			    </div>
+			  </div>
+			  <div class="form-group row">
+			  	<div class="col-2 text-right">
+			  		 <label for="input_description">描述</label>
+			  	</div>
+			    <div class="col-10">
+			    	<input type="text" class="form-control" id="input_description" placeholder="请输入描述">
+			    </div>
+			  </div>
+			  <div class="form-group row">
+			  	<div class="col-2 text-right">
+			  		 <label for="input_price">价格</label>
+			  	</div>
+			    <div class="col-10">
+			    	<input type="text" class="form-control" id="input_price" placeholder="请输入价格">
+			    </div>
+			  </div>
+			  <div class="form-group row">
+			  	<di class="col-2 text-right">
+			  		<label for="input_categoryId">栏目id</label>
+			  	</di>
+			  	<div class="col-10">
+			  		<select id="input_categoryId" class="form-control">
+			  			<option value="" style="display: none;">请选择栏目id</option>
+			  		</select>
+			  	</div>
+			  </div>
+			</form>
+	      </div>
+      			<div class="modal-footer">
+		        <button type="button" class="btn btn-secondary" id="cpbtn_none">返回</button>
+		        <button type="button" class="btn btn-primary" id="addproduct">保存</button>
+      			</div>
+    		</div>
+  		</div>
+	</div>
+</div>
+
+<script>
+	baseURL = "http://134.175.100.63:6677";
+	// 该id是点击修改按钮时获取的id，设置为全局变量
+	var EditId;
+	//=====初始化数据，把后台数据渲染到浏览器端（查询）======
+		function initData(){
+			// 在每次追加数据之前，先清空table
+			$('.table > tbody').empty();
+			var url = "/product/findAll";
+			$.get(baseURL+url,function(result){
+				result.data.forEach(function(item){
+					var newTr = $(`<tr>
+							<td><input type="checkbox" value="`+item.id+`"/>`+item.id+`</td>
+							<td>`+item.name+`</td>
+							<td>`+item.description+`</td>
+							<td>`+item.price+`</td>
+							 <td>`+item.categoryId+`</td>
+							<td>
+								<a class="iconfont icon-xiugai" id="cpbtn_upd"></a>
+								<a class="iconfont icon-iconfontshanchu1" id="cpbtn_del"></a>
+							</td>
+						</tr>`);
+					//获取到的后台数据显示在tbody上
+					$('.table >tbody').append(newTr);
+				})
+			})
+		};
+		// 查询所有订单的id
+		function searchParentId(){
+			var url = "/category/findAll";
+			$.get(baseURL+url,function(result){
+				result.data.forEach(function(item){
+					var newOption = $(`
+						<option value="`+item.id+`">`+item.id+`</option>
+					`);
+					// 追加到模态框的下拉框中
+					$('#input_categoryId').append(newOption);
+				});
+			});
+		}
+	$(function(){
+		//调用初始化数据函数
+		initData();
+		searchParentId();
+		//================为添加按钮绑定显示模态框事件===========
+		$('#cpbtn_add').on("click",function(){
+			//让id为exampleModal的模态框显示
+			$("#productModal").modal("show");
+		})
+		//点击×关闭模态框
+		$("#cpbtn_none").on("click",function(){
+			$("#productModal").modal("hide");
+		});
+		// 监听模态框的关闭，清空模态框内容
+		$('#productModal').on('hidden.bs.modal', function(e){
+		  $(this).find('form')[0].reset();
+		})
+		// ======================批量删除=====================
+		$("#cpbtn_pldel").on("click",function(){
+			var ids = $(':checkbox:checked').map(function(index,item){
+				return $(item).val();
+			}).toArray();
+			var data = '';
+			for(index in ids){
+				if(index == 0){
+					data += 'ids='+ids[index]
+				}else{
+					data +='&ids='+ids[index]
+				}
+			}
+			var url = "/product/batchDelete";
+			$.post(baseURL+url,data,function(result){
+				console.log(result);
+				initData();
+			})
+		})
+		// =================保存数据以及修改数据===============
+		$("#addproduct").on("click",function(){
+			var name  = $("#input_name").val();
+			var description = $("#input_description").val();
+			var price = $("#input_price").val();
+			var categoryId = $('#input_categoryId').val();
+			if(EditId){
+				//id存在，则修改
+				var data ={
+					id:EditId,
+					name:name,
+					description:description,
+					price:price,
+					categoryId:categoryId
+				}
+				// 将id置为空，否则点击修改后再次点击添加，还是修改
+					EditId = '';
+			}else{
+				//id不存在,即添加
+				var data ={
+					name:name,
+					description:description,
+					price:price,
+					categoryId:categoryId
+				}
+			}
+			var url = "/product/saveOrUpdate";
+			$.post(baseURL+url,data,function(result){
+				alert(result.message);
+				initData();
+			})
+			//3.关闭模态框，刷新列表
+				$('#productModal').modal('hide');
+		})
+		// =================删除数据以及修改数据===============
+		$(".table >tbody").on("click","a",function(){
+			switch(this.id){
+				case "cpbtn_del" :{
+					// 获取到id的值
+					var id = $(this).parents("tr").find("td:nth-child(1)").text();
+					//与后台进行交互
+					var data = {
+						id:id
+					}
+					var url = "/product/deleteById";
+					$.get(baseURL+url,data,function(result){
+						alert(result.message);
+					//刷新数据
+						initData();
+					})
+					break;
+				}
+				case "cpbtn_upd" :{
+					// 打开模态框
+				 	$('#productModal').modal('show');
+					//获取值
+					EditId = $(this).parents("tr").find("td:nth-child(1)").text();
+					var name = $(this).parents("tr").find("td:nth-child(2)").text();
+					var description = $(this).parents('tr').find('td:nth-child(3)').text();
+				 	var price = $(this).parents('tr').find('td:nth-child(4)').text();
+				 	var categoryId = $(this).parents('tr').find('td:nth-child(5)').text();
+				 	$('#input_name').val(name);
+				 	$('#input_description').val(description);
+				 	$('#input_price').val(price);
+				 	$('#input_categoryId').val(categoryId);
+				 	break;
+				}
+			}
+		})
+
+	})
+</script>
